@@ -89,6 +89,9 @@
         captureButton.hidden = false;
         closeButton.hidden = false;
         downloadLink.hidden = true;
+        consentBox.checked = false;
+        consentWrap.hidden = true;
+        sendButton.hidden = true;
         message.textContent = "الكاميرا مفتوحة بإذنك. الصورة ما تخرجش من جهازك.";
       } catch (error) {
         message.textContent = error.name === "NotAllowedError"
@@ -111,7 +114,11 @@
       video.hidden = true;
       downloadLink.href = canvas.toDataURL("image/jpeg", 0.92);
       downloadLink.hidden = false;
-      message.textContent = "تصورت! اضغط «حمّل الصورة» باش تحفظها. الصورة تبقى عندك.";
+      consentBox.checked = false;
+      consentWrap.hidden = false;
+      sendButton.disabled = true;
+      sendButton.hidden = false;
+      message.textContent = "تصورت! تقدر تحملها، أو توافق صراحة وترسلها للمجموعة.";
       stopCamera();
     });
 
