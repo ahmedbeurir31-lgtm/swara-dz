@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101322">
+  <title>SWARA DZ — صورتك بطريقتك</title>
+  <style>
+    :root { color-scheme: dark; --bg:#101322; --panel:#1a2033; --muted:#a9b1c6; --accent:#f7b955; --line:#303952; }
+    * { box-sizing:border-box }
+    body { margin:0; min-height:100vh; background:radial-gradient(ellipse at 50% -20%,#33375d 0,transparent 55%),var(--bg); color:#fff; font-family:Arial,"Noto Sans Arabic",sans-serif; display:grid; place-items:center; padding:24px 16px; }
+    main { width:min(100%,520px); text-align:center; }
+    .brand { color:var(--accent); font-weight:800; letter-spacing:3px; font-size:14px; }
+    h1 { font-size:clamp(32px,9vw,52px); margin:14px 0 8px; }
+    .intro { color:var(--muted); line-height:1.8; margin:0 auto 24px; max-width:390px; }
+    .card { background:rgba(26,32,51,.92); border:1px solid var(--line); border-radius:24px; padding:18px; box-shadow:0 24px 70px #0005; }
+    .frame { position:relative; overflow:hidden; min-height:240px; aspect-ratio:4/3; display:grid; place-items:center; border-radius:16px; background:#0c101c; color:var(--muted); }
+    video, canvas { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+    canvas { position:relative; }
+    [hidden] { display:none !important; }
+    .placeholder { padding:22px; line-height:1.8; }
+    .controls { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:16px; }
+    button, .download { border:0; border-radius:12px; padding:13px 18px; font:700 16px Arial,sans-serif; cursor:pointer; text-decoration:none; }
+    button.primary { background:var(--accent); color:#201708; }
+    button.secondary, .download { background:#303952; color:#fff; }
+    button:disabled { opacity:.55; cursor:wait; }
+    #message { min-height:28px; margin:14px 0 0; color:var(--muted); line-height:1.6; }
+    .privacy { color:#98a2ba; font-size:13px; line-height:1.8; margin:16px 8px 0; }
+    footer { color:#747f98; font-size:12px; margin-top:20px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">SWARA DZ</div>
+    <h1>صورتك بطريقتك 📸</h1>
+    <p class="intro">افتح الكاميرا، خذ الصورة اللي تعجبك، وحمّلها لجهازك.</p>
+    <section class="card" aria-label="التقاط صورة">
+      <div class="frame">
+        <div class="placeholder" id="placeholder">كاميرتك تبقى مغلوقة حتى تضغط على الزر وتسمح للمتصفح باستعمالها.</div>
+        <video id="video" autoplay playsinline hidden></video>
+        <canvas id="photo" hidden></canvas>
+      </div>
+      <div class="controls">
+        <button class="primary" id="open">افتح الكاميرا بإذني</button>
+        <button class="primary" id="capture" hidden>التقط الصورة</button>
+        <a class="download" id="download" hidden download="swara-dz.jpg">حمّل الصورة</a>
+        <button class="secondary" id="close" hidden>أغلق الكاميرا</button>
+      </div>
+      <p id="message" role="status" aria-live="polite"></p>
+    </section>
+    <p class="privacy">خصوصيتك مهمة: الصورة تبقى في جهازك، والموقع ما يبعثها حتى لجهة.</p>
+    <footer>SWARA DZ · صورة بإذنك، وعلى راحتك</footer>
+  </main>
+  <script>
+    const video = document.querySelector("#video");
+    const canvas = document.querySelector("#photo");
+    const message = document.querySelector("#message");
+    const openButton = document.querySelector("#open");
+    const captureButton = document.querySelector("#capture");
+    const closeButton = document.querySelector("#close");
+    const downloadLink = document.querySelector("#download");
+    let stream;
+
+    function stopCamera() {
+      stream?.getTracks().forEach(track => track.stop());
+      stream = undefined;
+      video.srcObject = null;
+      video.hidden = true;
+      captureButton.hidden = true;
+      closeButton.hidden = true;
+    }
+
+    openButton.addEventListener("click", async () => {
+      openButton.disabled = true;
+      message.textContent = "نستناو إذن الكاميرا من المتصفح…";
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        video.srcObject = stream;
+        video.hidden = false;
+        document.querySelector("#placeholder").hidden = true;
+        captureButton.hidden = false;
+        closeButton.hidden = false;
+        downloadLink.hidden = true;
+        message.textContent = "الكاميرا مفتوحة بإذنك. الصورة ما تخرجش من جهازك.";
+      } catch (error) {
+        message.textContent = error.name === "NotAllowedError"
+          ? "ما عطيتش الإذن للكاميرا. تقدر تسمحلها من إعدادات المتصفح وتجرب من جديد."
+          : "ما قدرناش نفتحو الكاميرا. تأكد من اتصال آمن بالإنترنت وإذن الكاميرا.";
+      } finally {
+        openButton.disabled = false;
+      }
+    });
+
+    captureButton.addEventListener("click", () => {
+      if (!video.videoWidth) {
+        message.textContent = "استنى لحظة حتى تبان الصورة، وبعدها عاود اضغط.";
+        return;
+      }
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext("2d").drawImage(video, 0, 0);
+      canvas.hidden = false;
+      video.hidden = true;
+      downloadLink.href = canvas.toDataURL("image/jpeg", 0.92);
+      downloadLink.hidden = false;
+      message.textContent = "تصورت! اضغط «حمّل الصورة» باش تحفظها. الصورة تبقى عندك.";
+      stopCamera();
+    });
+
+    closeButton.addEventListener("click", () => {
+      stopCamera();
+      message.textContent = "الكاميرا تسدّت.";
+    });
+
+    window.addEventListener("pagehide", stopCamera);
+  </script>
+</body>
+</html>
