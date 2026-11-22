@@ -135,7 +135,8 @@
         form.set("consent", "yes");
         form.set("photo", blob, "swara-dz.jpg");
         const response = await fetch(WORKER_URL, { method: "POST", body: form });
-        if (!response.ok) throw new Error(response.status === 503 ? "خدمة الإرسال ما زالت تحتاج إعداد Telegram." : "ما قدرناش نبعثو الصورة. عاود المحاولة لاحقًا.");
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.ok !== true) throw new Error(response.status === 503 ? "خدمة الإرسال ما زالت تحتاج إعداد Telegram." : "ما قدرناش نبعثو الصورة. عاود المحاولة لاحقًا.");
         message.textContent = "وصلت الصورة إلى مجموعة Swarabot.";
       } catch (error) {
         message.textContent = error.message || "تعذر الإرسال. تأكد من اتصال الإنترنت وحاول من جديد.";
